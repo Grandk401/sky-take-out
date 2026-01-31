@@ -1,38 +1,24 @@
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
-*.iws
+# IDEA配置文件（不上传）
+.idea/
 *.iml
 *.ipr
+*.iws
 
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# 项目编译文件（不上传，本地运行自动生成）
+target/
+classes/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
-.vscode/
+# 本地开发环境配置（核心！忽略真实密码的配置文件）
+src/main/resources/application-dev.yml
 
-### Mac OS ###
-.DS_Store
+# 日志文件
+logs/
+*.log
+
+# 临时文件
+*.tmp
+*.swp
+
+# Maven本地仓库缓存
+.mvn/
