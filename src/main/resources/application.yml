@@ -1,0 +1,20 @@
+# 项目基础配置模板（传GitHub，本地开发请用application-dev.yml）
+# 激活本地开发环境配置
+spring:
+  profiles:
+    active: dev  # 核心：告诉Spring Boot，优先加载application-dev.yml的配置
+
+# 以下为模板，无需修改，真实配置在dev文件中
+server:
+  port: 8080
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/sky_take_out?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: 【填你自己的MySQL账号】
+    password: 【填你自己的MySQL密码】
+
+mybatis:
+  type-aliases-package: com.sky.entity
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
