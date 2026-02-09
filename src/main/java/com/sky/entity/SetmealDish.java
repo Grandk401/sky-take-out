@@ -3,6 +3,8 @@ package com.sky.entity;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +17,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SetmealDish implements Serializable {
     private static final long serialVersionUID = 1L;
+    //主键策略：数据库自增策略
+    @TableId(type = IdType.AUTO)
     private Long id;                    // 关联id;
     private Long setmealId;             // 套餐id;关联setmeal表;
     private Long dishId;                // 菜品id;关联dish表;

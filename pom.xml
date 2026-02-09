@@ -26,6 +26,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- MyBatis-Plus 核心启动器（自动整合 MyBatis + 适配 SpringBoot） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <version>3.5.3.1</version>
+        </dependency>
         <!-- Spring Boot Test 核心依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

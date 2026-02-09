@@ -1,5 +1,7 @@
 package com.sky.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ShoppingCart implements Serializable {
     private static final long serialVersionUID = 1L;
+    //主键策略：数据库自增策略
+    @TableId(type = IdType.AUTO)
     private Long id;                    // 购物车id;
     private Long userId;                // 用户id;关联user表;
     private Long dishId;                // 菜品id;关联dish表;

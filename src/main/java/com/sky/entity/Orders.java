@@ -1,5 +1,7 @@
 package com.sky.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Orders implements Serializable {
     private static final long serialVersionUID = 1L;
+    //主键策略：数据库自增策略
+    @TableId(type = IdType.AUTO)
     private Long id;                    // 订单id;
     private String number;              // 订单号;
     private Integer status;             // 订单状态;
