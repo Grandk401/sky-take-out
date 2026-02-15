@@ -1,9 +1,6 @@
 package com.sky.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,5 +31,6 @@ public class AddressBook implements Serializable {
     private Long createUser; // 创建人
     private Long updateUser; // 更新人
     @TableField("is_deleted")
+    @TableLogic(value = "0", delval = "1")
     private Integer isDeleted; // 删除标志（0：未删除；1：已删除）
 }
