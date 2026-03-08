@@ -4,3 +4,5 @@
 *.class
 *Test.java
 **/test/
+# 忽略苍穹外卖sky-server模块的数据库/dev环境配置（避免泄露账号密码）
+sky-server/src/main/resources/application-dev.yml
