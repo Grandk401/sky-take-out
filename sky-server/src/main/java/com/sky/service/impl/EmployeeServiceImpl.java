@@ -67,8 +67,10 @@ public class EmployeeServiceImpl implements EmployeeService {
         //3、返回实体对象
         return employee;
     }
+
     /**
      * 新增员工
+     *
      * @param employeeDTO
      */
     public void save(EmployeeDTO employeeDTO) {
@@ -96,11 +98,13 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         employeeMapper.insert(employee);
     }
-        /**
-         * 分页查询员工
-         * @param employeePageQueryDTO
-         * @return
-         */
+
+    /**
+     * 分页查询员工
+     *
+     * @param employeePageQueryDTO
+     * @return
+     */
     public PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
         //select * from employee limit 0,10
         //分页查询
@@ -111,5 +115,45 @@ public class EmployeeServiceImpl implements EmployeeService {
         List<Employee> records = page.getResult();
 
         return new PageResult(total, records);
+    }
+
+    /**
+     * 启用禁用员工账号
+     *
+     * @param status
+     * @param id
+     */
+    public void updateStatus(Integer status, Long id) {
+        //update employee set status = #{status},update_time = #{updateUser} where id = #{id}
+        Employee employee = Employee.builder()
+                        .status(status)
+                        .id(id)
+                        .build();
+        employeeMapper.update(employee);
+    }
+
+    /**
+     * 根据id查询员工
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public Employee getById(Long id) {
+        Employee employee = employeeMapper.getById(id);
+        //TODO:暂时用常量类PasswordConstant替代硬编码过滤密码，后续实现返回VO而不是实体类
+        employee.setPassword(PasswordConstant.MASKED_PASSWORD);
+        return employee;
+    }
+
+    @Override
+    public void update(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+        //设置当前记录的更新时间和更新人id（DTO中没有对应属性）
+        employee.setUpdateTime(LocalDateTime.now());
+        ///工具类BaseContext获取当前登录用户id
+        employee.setUpdateUser(BaseContext.getCurrentId());
+        employeeMapper.update(employee);
     }
 }
