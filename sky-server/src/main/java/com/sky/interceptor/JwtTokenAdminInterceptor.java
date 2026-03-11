@@ -44,8 +44,16 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
 
         //1、从请求头中获取令牌
         String token = request.getHeader(jwtProperties.getAdminTokenName());
-
+        log.info("从请求头获取的原始token：{}", token); // 新增日志，方便排查
         //2、校验令牌
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7); // 去掉"Bearer "前缀（7个字符）
+            log.info("截取后的token：{}", token); // 新增日志，验证截取结果
+        } else {
+            // token为空或格式错误，直接返回401
+            response.setStatus(401);
+            return false;
+        }
         try {
             log.info("jwt校验:{}", token);
             Claims claims = JwtUtil.parseJWT(jwtProperties.getAdminSecretKey(), token);
@@ -57,6 +65,7 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
             return true;
         } catch (Exception ex) {
             //4、不通过，响应401状态码
+            log.error("JWT解析失败：", ex); // 新增日志，打印具体错误
             response.setStatus(401);
             return false;
         }

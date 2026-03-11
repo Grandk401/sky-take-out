@@ -5,12 +5,13 @@ import com.sky.utils.AliOssUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 // 阿里云OSS配置类，用于配置OSS相关的属性
 @Component
 @Slf4j
-public class OssCnfiguration {
+public class OssConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AliOssUtil aliOssUtil(AliOssProperties aliOssProperties) {
