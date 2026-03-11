@@ -46,13 +46,16 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
         String token = request.getHeader(jwtProperties.getAdminTokenName());
         log.info("从请求头获取的原始token：{}", token); // 新增日志，方便排查
         //2、校验令牌
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7); // 去掉"Bearer "前缀（7个字符）
-            log.info("截取后的token：{}", token); // 新增日志，验证截取结果
-        } else {
-            // token为空或格式错误，直接返回401
+        // 先判断token是否为空
+        if (token == null || token.trim().isEmpty()) {
+            // token为空，直接返回401
             response.setStatus(401);
             return false;
+        }
+        // 再判断是否有Bearer前缀，有就截取；没有就直接用
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7); // 去掉"Bearer "前缀（7个字符）
+            log.info("截取后的token：{}", token); // 新增日志，验证截取结果
         }
         try {
             log.info("jwt校验:{}", token);
