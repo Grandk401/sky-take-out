@@ -1,0 +1,23 @@
+package com.sky.config;
+
+import com.sky.properties.AliOssProperties;
+import com.sky.utils.AliOssUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+
+// 阿里云OSS配置类，用于配置OSS相关的属性
+@Component
+@Slf4j
+public class OssCnfiguration {
+    @Bean
+    @ConditionalOnMissingBean
+    public AliOssUtil aliOssUtil(AliOssProperties aliOssProperties) {
+        log.info("阿里云OSS配置属性: {}", aliOssProperties);
+        return new AliOssUtil(aliOssProperties.getEndpoint(),
+                aliOssProperties.getAccessKeyId(),
+                aliOssProperties.getAccessKeySecret(),
+                aliOssProperties.getBucketName());
+    }
+}
