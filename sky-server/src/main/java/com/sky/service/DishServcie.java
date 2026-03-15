@@ -11,4 +11,11 @@ public interface DishServcie {
      * @param dishDTO
      */
     public void saveWithFlavor(DishDTO dishDTO);
+
+    /**
+     * 分页查询菜品
+     * @param dishPageQueryDTO
+     * @return
+     */
+    PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO);
 }

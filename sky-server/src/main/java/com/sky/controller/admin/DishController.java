@@ -36,4 +36,16 @@ public class DishController {
         dishService.saveWithFlavor(dishDTO);
         return Result.success();
     }
+    /**
+     * 分页查询菜品
+     * @param dishPageQueryDTO
+     * @return
+     */
+    @GetMapping("/page")
+    @ApiOperation("分页查询菜品")
+    public Result<PageResult> page(DishPageQueryDTO dishPageQueryDTO){
+        log.info("分页查询菜品：{}", dishPageQueryDTO);
+        PageResult pageResult = dishService.pageQuery(dishPageQueryDTO);
+        return Result.success(pageResult);
+    }
 }
