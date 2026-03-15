@@ -22,4 +22,16 @@
         </where>
         order by d.create_time desc
     </select>
+    <select id="selectByIds" parameterType="java.util.List" resultType="com.sky.entity.Dish">
+        select * from dish where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+    <delete id="deleteByIds" parameterType="java.util.List">
+        delete from dish where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
 </mapper>

@@ -3,6 +3,7 @@ package com.sky.service.impl;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
+import com.sky.constant.StatusConstant;
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
@@ -76,9 +77,9 @@ public class DishServiceImpl implements DishServcie {
     public void deleteBatch(List<Long> ids) {
         log.info("删除菜品:{}",ids);
         //起售中的菜品不能被删除
-        for (Long id : ids) {
-            Dish dish = dishMapper.selectById(id);
-            if (dish.getStatus() == 1){
+        List<Dish> dishList = dishMapper.selectByIds(ids);
+        for (Dish dish : dishList) {
+            if (dish.getStatus().equals(StatusConstant.ENABLE)){
                 throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
             }
         }
@@ -87,11 +88,9 @@ public class DishServiceImpl implements DishServcie {
         if (setmealIds != null && setmealIds.size() > 0){
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
-        for (Long id : ids) {
-            //删除菜品关联的口味
-            dishFlavorMapper.deleteByDishIds(id);
-            //删除菜品
-            dishMapper.deleteById(id);
-        }
+        //删除菜品关联的口味
+        dishFlavorMapper.deleteByDishIds(ids);
+        //删除菜品
+        dishMapper.deleteByIds(ids);
     }
 }
