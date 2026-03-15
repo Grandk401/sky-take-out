@@ -47,5 +47,4 @@ public class DishServiceImpl implements DishServcie {
             dishFlavorMapper.insertBatch(flavors);
         }
     }
-
 }

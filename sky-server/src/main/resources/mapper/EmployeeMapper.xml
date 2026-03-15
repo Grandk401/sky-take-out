@@ -31,6 +31,9 @@
                         <if test="status != null">
                             status = #{status},
                         </if>
+                        <if test="sex != null">
+                            sex = #{sex},
+                        </if>
                         update_time = #{updateTime},
                         update_user = #{updateUser}
             </set>
