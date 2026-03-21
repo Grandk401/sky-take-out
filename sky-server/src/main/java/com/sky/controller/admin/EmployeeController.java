@@ -135,12 +135,10 @@ public class EmployeeController {
 
     /**
      * 更新员工信息
-     *
-     * @param id
      * @param employeeDTO
      * @return
      */
-     @PutMapping()
+     @PutMapping
      @ApiOperation("更新员工信息")
      public Result update(@RequestBody EmployeeDTO employeeDTO){
         log.info("更新员工信息：{}", employeeDTO);
