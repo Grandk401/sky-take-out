@@ -38,4 +38,16 @@
             #{id}
         </foreach>
     </delete>
+    <update id="update" parameterType="com.sky.entity.Setmeal">
+        update setmeal
+        set name = #{name},
+        category_id = #{categoryId},
+        price = #{price},
+        image = #{image},
+        description = #{description},
+        status = #{status},
+        update_time = #{updateTime},
+        update_user = #{updateUser}
+        where id = #{id}
+    </update>
 </mapper>
