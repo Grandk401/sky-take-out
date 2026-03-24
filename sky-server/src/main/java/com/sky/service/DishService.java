@@ -9,7 +9,7 @@ import com.sky.vo.DishVO;
 
 import java.util.List;
 
-public interface DishServcie {
+public interface DishService {
     /**
      * 新增菜品
      * @param dishDTO
@@ -46,4 +46,11 @@ public interface DishServcie {
      * @return
      */
     List<Dish> list(Long categoryId);
+
+    /**
+     * 条件查询菜品和口味
+     * @param dish
+     * @return
+     */
+    List<DishVO> listWithFlavor(Dish dish);
 }
