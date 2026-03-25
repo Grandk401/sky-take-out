@@ -79,4 +79,10 @@
         </where>
         order by create_time desc
     </select>
+    <select id="selectCategoryIds" parameterType="list" resultType="list">
+        select category_id from dish where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
 </mapper>
