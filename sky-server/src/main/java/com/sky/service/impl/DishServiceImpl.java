@@ -237,4 +237,28 @@ public class DishServiceImpl implements DishService {
         return list;
     }
 
+    /**
+     * 菜品起售、停售
+     * @param status
+     * @param id
+     */
+    @Override
+    public void startOrStop(Integer status, Long id) {
+        // 查询菜品原信息（获取分类ID用于清除缓存）
+        Dish dish = dishMapper.selectById(id);
+        Long categoryId = dish.getCategoryId();
+
+        // 构建更新对象，只更新状态
+        Dish updateDish = Dish.builder()
+                .id(id)
+                .status(status)
+                .build();
+        dishMapper.update(updateDish);
+
+        // 清除Redis缓存（该分类下菜品状态变了，必须清缓存）
+        String key = "dish_" + categoryId;
+        redisTemplate.delete(key);
+
+        log.info("菜品状态修改成功：id={}, status={}, 清除分类{}缓存", id, status, categoryId);
+    }
 }
