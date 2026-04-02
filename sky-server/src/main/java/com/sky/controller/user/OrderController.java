@@ -1,7 +1,10 @@
 package com.sky.controller.user;
 
+import com.github.pagehelper.Page;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
+import com.sky.entity.Orders;
+import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
 import com.sky.vo.OrderPaymentVO;
@@ -48,4 +51,17 @@ public class OrderController {
         return Result.success(orderPaymentVO);
     }
 
+    /**
+     * 查询历史订单
+     * @param pageNum
+     * @param pageSize
+     * @param status
+     * @return
+     */
+    @GetMapping("/historyOrders")
+    @ApiOperation("查询历史订单")
+    public Result<PageResult> page(int pageNum, int pageSize,  Integer status) {
+        PageResult pageResult = orderService.pageQuery4User(pageNum, pageSize, status);
+        return Result.success(pageResult);
+    }
 }
