@@ -10,6 +10,7 @@ import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
+import com.sky.exception.OrderBusinessException;
 import com.sky.exception.ShoppingCartBusinessException;
 import com.sky.mapper.OrderDetailMapper;
 import com.sky.mapper.OrderMapper;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,6 +120,7 @@ public class OrderServiceImpl implements OrderService {
      * @param status
      * @return
      */
+    @Override
     public PageResult pageQuery4User(int page, int pageSize, Integer status){
         // 分页查询订单
         PageHelper.startPage(page, pageSize);
@@ -151,6 +154,61 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return new PageResult(pageOrders.getTotal(), orderVOList);
+    }
+
+    /**
+     * 根据订单id查询订单
+     * @param id
+     * @return
+     */
+    @Override
+    public OrderVO details(Long id) {
+        Orders orders = orderMapper.getById(id);
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+        //查询订单明细
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(id);
+        orderVO.setOrderDetailList(orderDetailList);
+        return orderVO;
+    }
+
+    /**
+     * 用户取消订单
+     * @param id
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancel(Long id) throws Exception  {
+        Orders ordersDB = orderMapper.getById(id);
+        //判断订单是否存在
+        if(ordersDB == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        //验证订单是否属于当前用户
+        if(!ordersDB.getUserId().equals(BaseContext.getCurrentId())){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_YOUR);
+        }
+        //判断订单状态，只允许取消待付款和待接单状态的订单 1待付款 2待接单 3已接单 4派送中 5已完成 6已取消
+        if(ordersDB.getStatus() > Orders.TO_BE_CONFIRMED){
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        Orders orders = new Orders();
+        orders.setId(ordersDB.getId());
+        //若订单支付状态为已支付，调用微信退款接口
+        if(ordersDB.getPayStatus().equals(Orders.PAID)){
+//            weChatPayUtil.refund(
+//                    ordersDB.getNumber(),//商户订单号
+//                    ordersDB.getNumber(),//退款订单号
+//                    new BigDecimal(0.01),//退款金额，单位 元
+//                    new BigDecimal(0.01));//原订单金额，单位 元
+            //修改订单状态为已退款
+            orders.setPayStatus(Orders.REFUND);
+        }
+        //修改订单状态为已取消, 并更新取消时间、取消原因
+        orders.setStatus(Orders.CANCELLED);
+        orders.setCancelTime(LocalDateTime.now());
+        orders.setCancelReason("用户取消订单");
+        orderMapper.update(orders);
     }
 
     /**
