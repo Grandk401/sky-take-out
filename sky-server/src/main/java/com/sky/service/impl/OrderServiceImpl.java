@@ -113,26 +113,26 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * 分页查询历史订单
-     * @param pageNum
+     * @param page
      * @param pageSize
      * @param status
      * @return
      */
-    public PageResult pageQuery4User(int pageNum, int pageSize, Integer status){
+    public PageResult pageQuery4User(int page, int pageSize, Integer status){
         // 分页查询订单
-        PageHelper.startPage(pageNum, pageSize);
+        PageHelper.startPage(page, pageSize);
         OrdersPageQueryDTO ordersPageQueryDTO = new OrdersPageQueryDTO();
         ordersPageQueryDTO.setStatus(status);
         ordersPageQueryDTO.setUserId(BaseContext.getCurrentId());
-        Page<Orders> page = orderMapper.pageQuery(ordersPageQueryDTO);
+        Page<Orders> pageOrders = orderMapper.pageQuery(ordersPageQueryDTO);
 
-        if(page == null || page.getTotal() == 0){
+        if(pageOrders == null || pageOrders.getTotal() == 0){
             return new PageResult(0, new ArrayList());
         }
 
         // 批量查询本页所有订单的明细
         List<Long> orderIds = new ArrayList<>();
-        for (Orders orders : page) {
+        for (Orders orders : pageOrders) {
             orderIds.add(orders.getId());
         }
         List<OrderDetail> allDetails = orderDetailMapper.getByOrderIds(orderIds);
@@ -143,14 +143,14 @@ public class OrderServiceImpl implements OrderService {
 
         // 组装 VO
         List<OrderVO> orderVOList = new ArrayList<>();
-        for (Orders orders : page) {
+        for (Orders orders : pageOrders) {
             OrderVO orderVO = new OrderVO();
             BeanUtils.copyProperties(orders, orderVO);
             orderVO.setOrderDetailList(detailMap.getOrDefault(orders.getId(), new ArrayList<>()));
             orderVOList.add(orderVO);
         }
 
-        return new PageResult(page.getTotal(), orderVOList);
+        return new PageResult(pageOrders.getTotal(), orderVOList);
     }
 
     /**
