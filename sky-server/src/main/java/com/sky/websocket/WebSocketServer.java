@@ -1,5 +1,6 @@
 package com.sky.websocket;
 
+import com.alibaba.fastjson.JSON;
 import org.springframework.stereotype.Component;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
@@ -10,6 +11,7 @@ import javax.websocket.server.ServerEndpoint;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
 
 /**
  * WebSocket服务
@@ -68,4 +70,19 @@ public class WebSocketServer {
         }
     }
 
+    /**
+     * 发送订单相关消息
+     * @param type 消息类型：1-来单提醒，2-用户催单
+     * @param orderId 订单ID
+     * @param orderNumber 订单号
+     */
+    public void sendOrderMessage(int type, Long orderId, String orderNumber) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", type);
+        message.put("orderId", orderId);
+        message.put("content", "订单号：" + orderNumber);
+
+        String jsonMessage = JSON.toJSONString(message);
+        sendToAllClient(jsonMessage);
+    }
 }
