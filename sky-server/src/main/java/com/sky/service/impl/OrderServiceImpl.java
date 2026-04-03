@@ -5,10 +5,7 @@ import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
-import com.sky.dto.OrdersConfirmDTO;
-import com.sky.dto.OrdersPageQueryDTO;
-import com.sky.dto.OrdersPaymentDTO;
-import com.sky.dto.OrdersSubmitDTO;
+import com.sky.dto.*;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
@@ -32,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -331,6 +329,80 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+    }
+
+    /**
+     * 商家拒单
+     * @param ordersRejectionDTO
+     */
+    @Override
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO) throws Exception {
+        //从数据库中查询订单状态
+        Orders ordersDB = orderMapper.getById(ordersRejectionDTO.getId());
+        //非空校验
+        if (ordersDB == null) {
+            throw new OrderBusinessException("订单不存在");
+        }
+        //校验订单状态是否为待接单
+        if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException("订单状态不是待接单");
+        }
+        //如果已支付，调用微信退款接口，并更新支付状态为已退款，订单状态为已取消
+        if (Orders.PAID.equals(ordersDB.getPayStatus())) {
+//            //调用微信退款接口
+//            String refundResult = weChatPayUtil.refund(
+//                    ordersDB.getNumber(), //商户订单号
+//                    ordersDB.getNumber(), //退款订单号
+//                    new BigDecimal(0.01), //订单金额，单位 元
+//                    new BigDecimal(0.01));//退款金额，单位 元
+              log.info("商家拒单，订单号：{}", ordersDB.getNumber());
+        }
+
+        //更新订单状态，只更新必须的字段
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.CANCELLED)
+                .payStatus(Orders.REFUND)
+                .cancelReason(ordersRejectionDTO.getRejectionReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+    }
+
+    /**
+     * 商家取消订单
+     * @param ordersCancelDTO
+     */
+    @Override
+    public void adminCancel(OrdersCancelDTO ordersCancelDTO) throws Exception {
+       //从数据库中查询订单状态
+       Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
+       //非空校验
+       if (ordersDB == null) {
+           throw new OrderBusinessException("订单不存在");
+       }
+
+        //构造订单实体类
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.CANCELLED)
+                .cancelReason(ordersCancelDTO.getCancelReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+       //如果订单已支付，调用微信退款接口
+       if (Orders.PAID.equals(ordersDB.getPayStatus())) {
+//           //调用微信退款接口
+//           String refundResult = weChatPayUtil.refund(
+//                   ordersDB.getNumber(), //商户订单号
+//                   ordersDB.getNumber(), //退款订单号
+//                   new BigDecimal(0.01), //订单金额，单位 元
+//                   new BigDecimal(0.01));//退款金额，单位 元
+           //设置支付状态为已退款
+           orders.setPayStatus(Orders.REFUND);
+           log.info("商家取消订单，订单号：{}", ordersDB.getNumber());
+       }
+       //更新订单状态，只更新必须的字段
+       orderMapper.update(orders);
     }
 
     /**
