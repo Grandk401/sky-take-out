@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -241,6 +240,51 @@ public class OrderServiceImpl implements OrderService {
 
         // 将购物车对象批量添加到数据库
         shoppingCartMapper.insertBatch(shoppingCartList);
+    }
+
+    /**
+     * 订单搜索
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    @Override
+    public PageResult pageQuery(OrdersPageQueryDTO ordersPageQueryDTO) {
+        PageHelper.startPage(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
+        //查询订单
+        Page<Orders> page = orderMapper.pageQuery(ordersPageQueryDTO);
+        if (page == null || page.isEmpty()) {
+            return new PageResult(0, new ArrayList<>());
+        }
+        //收集订单ID进行批量查询
+        List<Long> orderIds = new ArrayList<>();
+        for (Orders orders : page) {
+            orderIds.add(orders.getId());
+        }
+
+        //批量查询订单明细
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderIds(orderIds);
+
+        //将订单明细按订单ID分组
+        Map<Long, List<OrderDetail>> orderDetailMap = orderDetailList.stream()
+                .collect(Collectors.groupingBy(OrderDetail::getOrderId));
+
+        //构建VO对象集合
+        List<OrderVO> orderVOList = new ArrayList<>();
+        for (Orders orders : page) {
+            OrderVO orderVO = new OrderVO();
+            BeanUtils.copyProperties(orders, orderVO);
+            //从Map中获取对应的订单明细
+            orderVO.setOrderDetailList(orderDetailMap.getOrDefault(orders.getId(), new ArrayList<>()));
+            orderVOList.add(orderVO);
+        }
+
+        //将VO对象中的订单菜品信息转换为字符串，添加到VO对象中
+        orderVOList.forEach(x -> {
+            x.setOrderDishes(x.getOrderDetailList().stream().map(y -> y.getName() + " * " + y.getNumber()).collect(Collectors.joining("; ")));
+        });
+
+        //用集合封装VO返回
+        return new PageResult(page.getTotal(), orderVOList);
     }
 
     /**
