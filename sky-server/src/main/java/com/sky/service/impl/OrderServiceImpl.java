@@ -316,7 +316,7 @@ public class OrderServiceImpl implements OrderService {
         Orders ordersDB = orderMapper.getById(ordersConfirmDTO.getId());
         //非空校验
         if (ordersDB == null) {
-            throw new OrderBusinessException("订单不存在");
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
         //校验订单状态是否为待接单
         if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
@@ -341,7 +341,7 @@ public class OrderServiceImpl implements OrderService {
         Orders ordersDB = orderMapper.getById(ordersRejectionDTO.getId());
         //非空校验
         if (ordersDB == null) {
-            throw new OrderBusinessException("订单不存在");
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
         //校验订单状态是否为待接单
         if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
@@ -379,7 +379,7 @@ public class OrderServiceImpl implements OrderService {
        Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
        //非空校验
        if (ordersDB == null) {
-           throw new OrderBusinessException("订单不存在");
+           throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
        }
 
         //构造订单实体类
@@ -403,6 +403,55 @@ public class OrderServiceImpl implements OrderService {
        }
        //更新订单状态，只更新必须的字段
        orderMapper.update(orders);
+    }
+
+    /**
+     * 派送订单
+     * @param id
+     */
+    @Override
+    public void delivery(Long id) {
+        //从数据库中查询订单状态
+        Orders ordersDB = orderMapper.getById(id);
+        //非空校验
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        //校验订单状态是否为已接单
+        if (!Orders.CONFIRMED.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException("订单状态不是已接单");
+        }
+        //更新订单状态，只更新状态字段
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.DELIVERY_IN_PROGRESS)
+                .build();
+        orderMapper.update(orders);
+    }
+
+    /**
+     * 订单完成
+     * @param id
+     */
+    @Override
+    public void complete(Long id) {
+        //从数据库中查询订单状态
+        Orders ordersDB = orderMapper.getById(id);
+        //非空校验
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        //校验订单状态是否为派送中
+        if (!Orders.DELIVERY_IN_PROGRESS.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        //更新订单状态，只更新状态字段
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.COMPLETED)
+                .deliveryTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
     }
 
     /**

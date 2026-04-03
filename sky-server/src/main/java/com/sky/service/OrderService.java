@@ -88,4 +88,16 @@ public  interface OrderService {
      * @param ordersCancelDTO
      */
     void adminCancel(OrdersCancelDTO ordersCancelDTO) throws Exception;
+
+    /**
+     * 派送订单
+     * @param id
+     */
+    void delivery(Long id);
+
+    /**
+     * 订单完成
+     * @param id
+     */
+    void complete(Long id);
 }

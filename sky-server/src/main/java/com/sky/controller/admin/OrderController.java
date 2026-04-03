@@ -92,7 +92,7 @@ public class OrderController {
 
     /**
      * 商家取消订单
-     * @param id
+     * @param ordersCancelDTO
      * @return
      */
     @RequestMapping("/cancel")
@@ -101,4 +101,28 @@ public class OrderController {
         orderService.adminCancel(ordersCancelDTO);
         return Result.success();
     }
-}
+
+    /**
+     * 派送订单
+     * @param id
+     * @return
+     */
+    @RequestMapping("/delivery/{id}")
+    @ApiOperation("派送订单")
+    public Result<Void> delivery(@PathVariable Long id) {
+        orderService.delivery(id);
+        return Result.success();
+    }
+
+    /**
+     * 订单完成
+     * @param id
+     * @return
+     */
+    @RequestMapping("/complete/{id}")
+    @ApiOperation("订单完成")
+    public Result<Void> complete(@PathVariable Long id) {
+        orderService.complete(id);
+        return Result.success();
+    }
+   }
