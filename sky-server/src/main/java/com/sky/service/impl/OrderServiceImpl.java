@@ -5,6 +5,7 @@ import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersConfirmDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
@@ -22,6 +23,7 @@ import com.sky.service.OrderService;
 import com.sky.service.ShoppingCartService;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import lombok.extern.slf4j.Slf4j;
@@ -285,6 +287,50 @@ public class OrderServiceImpl implements OrderService {
 
         //用集合封装VO返回
         return new PageResult(page.getTotal(), orderVOList);
+    }
+
+    /**
+     * 统计订单状态数量
+     * @return
+     */
+    @Override
+    public OrderStatisticsVO statistics() {
+        //根据订单状态查询订单数量
+        Integer TO_BE_CONFIRMED = orderMapper.countStatus(Orders.TO_BE_CONFIRMED);
+        Integer CONFIRMED = orderMapper.countStatus(Orders.CONFIRMED);
+        Integer DELIVERY_IN_PROGRESS = orderMapper.countStatus(Orders.DELIVERY_IN_PROGRESS);
+
+        //封装VO对象
+        OrderStatisticsVO vo = new OrderStatisticsVO();
+        vo.setToBeConfirmed(TO_BE_CONFIRMED);
+        vo.setConfirmed(CONFIRMED);
+        vo.setDeliveryInProgress(DELIVERY_IN_PROGRESS);
+        return vo;
+    }
+
+    /**
+     * 商家接单
+     * @param ordersConfirmDTO
+     */
+    @Override
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+        //更新订单状态为已接单
+        Orders ordersDB = orderMapper.getById(ordersConfirmDTO.getId());
+        //非空校验
+        if (ordersDB == null) {
+            throw new OrderBusinessException("订单不存在");
+        }
+        //校验订单状态是否为待接单
+        if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException("订单状态不是待接单");
+        }
+        //更新订单状态，只更新状态字段
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.CONFIRMED)
+                .build();
+
+        orderMapper.update(orders);
     }
 
     /**
