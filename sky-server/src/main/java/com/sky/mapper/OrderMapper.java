@@ -91,4 +91,12 @@ public interface OrderMapper {
      * @return
      */
     List<Map<String, Object>> countByDateRange(LocalDate begin, LocalDate end, Integer completed);
+
+    /**
+     * 查询销量排名Top10
+     * @param begin 开始日期
+     * @param end 结束日期
+     * @return 销量Top10数据列表
+     */
+    List<Map<String, Object>> getSalesTop10(LocalDate begin, LocalDate end);
 }

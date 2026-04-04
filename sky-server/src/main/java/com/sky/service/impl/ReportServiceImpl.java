@@ -8,6 +8,7 @@ import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,6 +185,39 @@ public class ReportServiceImpl implements ReportService {
                 .totalOrderCount(totalOrderSum)
                 .validOrderCount(validOrderSum)
                 .orderCompletionRate(rate)
+                .build();
+    }
+
+    /**
+     * 销量排名Top10
+     * @param begin
+     * @param end
+     * @return
+     */
+    @Override
+    public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+        if (begin == null || end == null) {
+            throw new OrderBusinessException("起止时间不能为空");
+        }
+        if (end.isBefore(begin)) {
+            throw new OrderBusinessException("结束时间不能早于开始时间");
+        }
+
+        // 查询销量排名Top10数据（SQL已按销量降序+limit 10）
+        List<Map<String, Object>> salesList = orderMapper.getSalesTop10(begin, end.plusDays(1));
+        log.info("销量Top10查询到 {} 条记录", salesList.size());
+
+        // 提取商品名称列表和销量列表
+        List<String> nameList = new ArrayList<>();
+        List<Integer> numberList = new ArrayList<>();
+        for (Map<String, Object> item : salesList) {
+            nameList.add(item.get("name").toString());
+            numberList.add(((Number) item.get("number")).intValue());
+        }
+
+        return SalesTop10ReportVO.builder()
+                .nameList(StringUtils.join(nameList, ","))
+                .numberList(StringUtils.join(numberList, ","))
                 .build();
     }
 }

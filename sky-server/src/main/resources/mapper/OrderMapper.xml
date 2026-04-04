@@ -87,4 +87,16 @@
           and order_time &lt; #{end}
         group by DATE_FORMAT(order_time, '%Y-%m-%d')
     </select>
+
+    <select id="getSalesTop10" resultType="java.util.Map">
+        select od.name as name, sum(od.number) as number
+        from order_detail od
+                 inner join orders o on od.order_id = o.id
+        where o.order_time >= #{begin}
+          and o.order_time &lt; #{end}
+          and o.status = 5
+        group by od.name
+        order by number desc
+        limit 10
+    </select>
 </mapper>

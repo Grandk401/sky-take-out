@@ -3,6 +3,7 @@ package com.sky.service;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 
 import java.time.LocalDate;
 
@@ -31,5 +32,13 @@ public interface ReportService {
      * @return
      */
     OrderReportVO orderStatistics(LocalDate begin, LocalDate end);
+
+    /**
+     * 销量排名Top10
+     * @param begin
+     * @param end
+     * @return
+     */
+    SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end);
 
 }
