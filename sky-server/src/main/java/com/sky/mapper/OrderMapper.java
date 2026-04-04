@@ -8,8 +8,10 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.springframework.core.annotation.Order;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface OrderMapper {
@@ -71,4 +73,13 @@ public interface OrderMapper {
      */
     @Select("select count(*) from orders where status = #{status}")
     Integer countStatus(Integer status);
+
+    /**
+     * 查询时间区间内的所有订单
+     * @param begin
+     * @param end
+     * @param status
+     * @return
+     */
+    List<Map<String, Object>> sumTurnoverByDateRange(LocalDate begin, LocalDate end, Integer status);
 }

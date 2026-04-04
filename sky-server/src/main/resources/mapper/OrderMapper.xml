@@ -67,4 +67,14 @@
         </where>
         order by order_time desc
     </select>
+
+    <select id="sumTurnoverByDateRange" resultType="java.util.Map">
+        select DATE_FORMAT(order_time, '%Y-%m-%d') as date,
+        COALESCE(sum(amount), 0) as turnover
+        from orders
+        where order_time >= #{begin}
+        and order_time &lt; #{end}
+        and status = #{status}
+        group by DATE_FORMAT(order_time, '%Y-%m-%d')
+    </select>
 </mapper>
