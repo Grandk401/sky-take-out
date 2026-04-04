@@ -25,6 +25,12 @@ public class ReportController {
     @Autowired
     private ReportService reportService;
 
+    /**
+     * 营业额统计
+     * @param begin 开始时间
+     * @param end 结束时间
+     * @return 营业额统计数据
+     */
     @GetMapping("/turnoverStatistics")
     @ApiOperation("营业额统计")
     public Result<TurnoverReportVO> turnoverStatistics(
@@ -36,6 +42,12 @@ public class ReportController {
         return Result.success(turnoverReportVO);
     }
 
+    /**
+     * 用户统计
+     * @param begin 开始时间
+     * @param end 结束时间
+     * @return 用户统计数据
+     */
     @GetMapping("/userStatistics")
     @ApiOperation("用户统计")
     public Result<UserReportVO> userStatistics(
@@ -44,6 +56,22 @@ public class ReportController {
     ) {
         log.info("用户数据统计 begin:{}, end:{}", begin, end);
         return Result.success(reportService.userStatistics(begin, end));
+    }
+
+    /**
+     * 订单统计
+     * @param begin 开始时间
+     * @param end 结束时间
+     * @return 订单统计数据
+     */
+    @GetMapping("/ordersStatistics")
+    @ApiOperation("订单统计")
+    public Result<OrderReportVO> ordersStatistics(
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end
+    ) {
+        log.info("订单数据统计 begin:{}, end:{}", begin, end);
+        return Result.success(reportService.orderStatistics(begin, end));
     }
 
 }

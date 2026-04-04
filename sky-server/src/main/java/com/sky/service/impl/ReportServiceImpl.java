@@ -7,6 +7,7 @@ import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
+import com.sky.vo.OrderReportVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,6 +123,67 @@ public class ReportServiceImpl implements ReportService {
                 .dateList(StringUtils.join(dateStrList, ","))
                 .newUserList(StringUtils.join(newUserListData, ","))       // ← 改掉
                 .totalUserList(StringUtils.join(totalUserListData, ","))   // ← 改掉
+                .build();
+    }
+
+    /**
+     * 订单统计
+     */
+    @Override
+    public OrderReportVO orderStatistics(LocalDate begin, LocalDate end) {
+        if (begin == null || end == null) {
+            throw new OrderBusinessException("起止时间不能为空");
+        }
+        if (end.isBefore(begin)) {
+            throw new OrderBusinessException("结束时间不能早于开始时间");
+        }
+
+        // 构造日期列表
+        List<String> dateStrList = new ArrayList<>();
+        LocalDate temp = begin;
+        while (!temp.isAfter(end)) {
+            dateStrList.add(temp.toString());
+            temp = temp.plusDays(1);
+        }
+
+        // 单次SQL查询，同时获取每日订单总数和有效订单数
+        List<Map<String, Object>> orderList = orderMapper.countByDateRange(
+                begin, end.plusDays(1), Orders.COMPLETED);
+        Map<String, Integer> totalOrderMap = orderList.stream().collect(Collectors.toMap(
+                item -> item.get("date").toString(),
+                item -> ((Number) item.get("totalOrderCount")).intValue()
+        ));
+        Map<String, Integer> validOrderMap = orderList.stream().collect(Collectors.toMap(
+                item -> item.get("date").toString(),
+                item -> ((Number) item.get("validOrderCount")).intValue()
+        ));
+        log.info("订单统计查询到 {} 条日期记录", orderList.size());
+
+        // 按日期顺序组装数据，同时累计计算总和
+        List<Integer> totalOrderData = new ArrayList<>();
+        List<Integer> validOrderData = new ArrayList<>();
+        int totalOrderSum = 0;
+        int validOrderSum = 0;
+
+        for (String date : dateStrList) {
+            int total = totalOrderMap.getOrDefault(date, 0);
+            int valid = validOrderMap.getOrDefault(date, 0);
+            totalOrderData.add(total);
+            validOrderData.add(valid);
+            totalOrderSum += total;
+            validOrderSum += valid;
+        }
+
+        // 订单完成率（返回小数比例0~1，前端ECharts负责转百分比，勿*100）
+        double rate = totalOrderSum > 0 ? (validOrderSum * 1.0 / totalOrderSum) : 0.0;
+
+        return OrderReportVO.builder()
+                .dateList(StringUtils.join(dateStrList, ","))
+                .orderCountList(StringUtils.join(totalOrderData, ","))
+                .validOrderCountList(StringUtils.join(validOrderData, ","))
+                .totalOrderCount(totalOrderSum)
+                .validOrderCount(validOrderSum)
+                .orderCompletionRate(rate)
                 .build();
     }
 }

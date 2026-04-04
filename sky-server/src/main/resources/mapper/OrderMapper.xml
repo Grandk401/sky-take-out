@@ -77,4 +77,14 @@
         and status = #{status}
         group by DATE_FORMAT(order_time, '%Y-%m-%d')
     </select>
+
+    <select id="countByDateRange" resultType="java.util.Map">
+        select DATE_FORMAT(order_time, '%Y-%m-%d') as date,
+               count(*) as totalOrderCount,
+               sum(case when status = #{completed} then 1 else 0 end) as validOrderCount
+        from orders
+        where order_time >= #{begin}
+          and order_time &lt; #{end}
+        group by DATE_FORMAT(order_time, '%Y-%m-%d')
+    </select>
 </mapper>

@@ -82,4 +82,13 @@ public interface OrderMapper {
      * @return
      */
     List<Map<String, Object>> sumTurnoverByDateRange(LocalDate begin, LocalDate end, Integer status);
+
+    /**
+     * 统计时间区间内每日订单数和有效订单数
+     * @param begin
+     * @param end
+     * @param completed 已完成订单状态码
+     * @return
+     */
+    List<Map<String, Object>> countByDateRange(LocalDate begin, LocalDate end, Integer completed);
 }
