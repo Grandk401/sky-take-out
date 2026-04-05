@@ -99,4 +99,57 @@
         order by number desc
         limit 10
     </select>
+
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(id) from orders
+        <where>
+            <if test="begin != null">
+                and order_time >= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt; #{end}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 工作台订单概览：一次聚合查询各状态订单数量 -->
+    <select id="countOverViewByMap" resultType="java.util.Map">
+        select
+            count(*) as allOrders,
+            sum(case when status = 2 then 1 else 0 end) as waitingOrders,
+            sum(case when status = 3 then 1 else 0 end) as deliveredOrders,
+            sum(case when status = 5 then 1 else 0 end) as completedOrders,
+            sum(case when status = 6 then 1 else 0 end) as cancelledOrders
+        from orders
+        <where>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt; #{end}
+            </if>
+        </where>
+    </select>
+
+    <!-- 工作台营业数据：一次查询同时返回营业额和有效订单数 -->
+    <select id="sumAndCountByMap" resultType="java.util.Map">
+        select
+            COALESCE(sum(amount), 0) as turnover,
+            count(*) as validOrderCount
+        from orders
+        <where>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt; #{end}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
 </mapper>

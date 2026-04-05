@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Select;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface DishMapper {
@@ -85,4 +86,10 @@ public interface DishMapper {
      * @return
      */
     List<Long> selectCategoryIds(List<Long> ids);
+
+    /**
+     * 聚合查询各状态菜品数量（用于工作台菜品概览）
+     * @return 包含 sold/discontinued 的Map
+     */
+    Map<String, Object> countOverViewByMap();
 }

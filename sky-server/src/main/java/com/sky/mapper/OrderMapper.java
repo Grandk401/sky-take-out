@@ -99,4 +99,25 @@ public interface OrderMapper {
      * @return 销量Top10数据列表
      */
     List<Map<String, Object>> getSalesTop10(LocalDate begin, LocalDate end);
+
+    /**
+     * 根据动态条件统计订单数量
+     * @param map 包含 begin/end/status 等条件
+     * @return 订单数
+     */
+    Integer countByMap(Map map);
+
+    /**
+     * 聚合查询各状态订单数量（用于工作台订单概览，一次返回全部状态计数）
+     * @param map 包含 begin/end 条件
+     * @return 包含 allOrders/waitingOrders/deliveredOrders/completedOrders/cancelledOrders 的Map
+     */
+    Map<String, Object> countOverViewByMap(Map map);
+
+    /**
+     * 聚合查询营业额和有效订单数（一次返回 sum + count）
+     * @param map 包含 begin/end/status 等条件
+     * @return 包含 turnover / validOrderCount 的Map
+     */
+    Map<String, Object> sumAndCountByMap(Map map);
 }

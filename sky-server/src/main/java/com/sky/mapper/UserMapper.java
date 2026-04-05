@@ -32,4 +32,11 @@ public interface UserMapper {
      */
     List<Map<String, Object>> countByDateRange(LocalDate begin, LocalDate end);
 
+    /**
+     * 根据动态条件统计用户数量
+     * @param map 包含 begin/end 等条件
+     * @return 用户数
+     */
+    Integer countByMap(Map map);
+
 }

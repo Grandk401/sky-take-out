@@ -15,4 +15,16 @@
         and create_time &lt; #{end}
         group by DATE_FORMAT(create_time, '%Y-%m-%d')
     </select>
+
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(id) from user
+        <where>
+            <if test="begin != null">
+                and create_time >= #{begin}
+            </if>
+            <if test="end != null">
+                and create_time &lt; #{end}
+            </if>
+        </where>
+    </select>
 </mapper>

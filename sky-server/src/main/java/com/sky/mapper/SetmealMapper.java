@@ -12,6 +12,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface SetmealMapper {
@@ -75,4 +76,10 @@ public interface SetmealMapper {
             "from setmeal_dish sd left join dish d on sd.dish_id = d.id " +
             "where sd.setmeal_id = #{setmealId}")
     List<DishItemVO> getDishItemBySetmealId(Long setmealId);
+
+    /**
+     * 聚合查询各状态套餐数量（用于工作台套餐概览）
+     * @return 包含 sold/discontinued 的Map
+     */
+    Map<String, Object> countOverViewByMap();
 }

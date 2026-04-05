@@ -85,4 +85,12 @@
             #{id}
         </foreach>
     </select>
+
+    <!-- 工作台菜品概览：一次聚合查询启售/停售菜品数量 -->
+    <select id="countOverViewByMap" resultType="java.util.Map">
+        select
+            sum(case when status = 1 then 1 else 0 end) as sold,
+            sum(case when status = 0 then 1 else 0 end) as discontinued
+        from dish
+    </select>
 </mapper>
