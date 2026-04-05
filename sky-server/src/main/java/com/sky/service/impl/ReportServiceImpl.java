@@ -5,21 +5,36 @@ import com.sky.exception.OrderBusinessException;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
+import com.sky.service.WorkspaceService;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import com.sky.vo.OrderReportVO;
 import com.sky.vo.SalesTop10ReportVO;
+import com.sky.vo.BusinessDataVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.poi.ss.usermodel.*;
 
 /**
  * 报表业务实现
@@ -33,6 +48,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private WorkspaceService workspaceService;
 
     /**
      * 营业额统计
@@ -219,5 +237,88 @@ public class ReportServiceImpl implements ReportService {
                 .nameList(StringUtils.join(nameList, ","))
                 .numberList(StringUtils.join(numberList, ","))
                 .build();
+    }
+
+
+    /**
+     * 导出运营数据报表
+     * @param response
+     */
+    public void exportBusinessData(HttpServletResponse response) {
+        // 查询数据库，获取营业数据---查询最近30天的运营数据
+        LocalDate dateBegin = LocalDate.now().minusDays(30);
+        LocalDate dateEnd = LocalDate.now().minusDays(1);
+
+        // 查询概览数据
+        BusinessDataVO businessDataVO = workspaceService.getBusinessData(dateBegin, dateEnd);
+
+        // 通过POI将数据写入到Excel文件中
+        InputStream in = this.getClass().getClassLoader().getResourceAsStream("template/运营数据报表模板.xlsx");
+
+        try {
+            // 基于模板文件创建一个新的Excel文件
+            XSSFWorkbook excel = new XSSFWorkbook(in);
+
+            // 获取表格文件的Sheet页
+            XSSFSheet sheet = excel.getSheet("Sheet1");
+
+            // 填充数据--时间
+            getOrCreateCell(sheet.getRow(1), 1).setCellValue("时间：" + dateBegin + "至" + dateEnd);
+
+            // 获得第4行，填充概览数据--营业额、订单完成率、新增用户数
+            XSSFRow row = sheet.getRow(3);
+            getOrCreateCell(row, 2).setCellValue(businessDataVO.getTurnover());
+            getOrCreateCell(row, 4).setCellValue(businessDataVO.getOrderCompletionRate());
+            getOrCreateCell(row, 6).setCellValue(businessDataVO.getNewUsers().doubleValue());
+
+            // 获得第5行，填充概览数据--有效订单数和单价
+            row = sheet.getRow(4);
+            getOrCreateCell(row, 2).setCellValue(businessDataVO.getValidOrderCount().doubleValue());
+            getOrCreateCell(row, 4).setCellValue(businessDataVO.getUnitPrice());
+
+            // 填充明细数据
+            Map<LocalDate, BusinessDataVO> businessDataMap = workspaceService.getBusinessDataList(dateBegin, dateEnd);
+            for (int i = 0; i < 30; i++) {
+                LocalDate date = dateBegin.plusDays(i);
+                // 从Map中直接取当天数据
+                BusinessDataVO businessData = businessDataMap.get(date);
+
+                // 获得某一行
+                row = sheet.getRow(7 + i);
+                getOrCreateCell(row, 1).setCellValue(date.toString());
+                getOrCreateCell(row, 2).setCellValue(businessData.getTurnover());
+                getOrCreateCell(row, 3).setCellValue(businessData.getValidOrderCount().doubleValue());
+                getOrCreateCell(row, 4).setCellValue(businessData.getOrderCompletionRate());
+                getOrCreateCell(row, 5).setCellValue(businessData.getUnitPrice());
+                getOrCreateCell(row, 6).setCellValue(businessData.getNewUsers().doubleValue());
+            }
+
+            // 通过输出流将Excel文件下载到客户端浏览器
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            String filename = URLEncoder.encode("运营数据报表.xlsx", "UTF-8");
+            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+            
+            ServletOutputStream out = response.getOutputStream();
+            excel.write(out);
+
+            // 关闭资源
+            out.close();
+            excel.close();
+            in.close();
+        } catch (IOException e) {
+            log.error("导出营业数据失败", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 获取或创建单元格，防止NPE
+     */
+    private Cell getOrCreateCell(Row row, int columnIndex) {
+        Cell cell = row.getCell(columnIndex);
+        if (cell == null) {
+            cell = row.createCell(columnIndex);
+        }
+        return cell;
     }
 }

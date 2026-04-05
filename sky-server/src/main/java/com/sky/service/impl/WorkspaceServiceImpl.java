@@ -17,6 +17,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -82,6 +84,67 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .unitPrice(unitPrice)
                 .newUsers(newUsers)
                 .build();
+    }
+
+    /**
+     * 批量查询时间区间内每天的营业数据
+     * 复用已有的 GROUP BY 批量查询方法，在内存中按天组装并计算派生字段
+     */
+    public Map<LocalDate, BusinessDataVO> getBusinessDataList(LocalDate begin, LocalDate end) {
+        // 查询每天的总订单数 + 有效订单数
+        List<Map<String, Object>> orderDailyList = orderMapper.countByDateRange(
+                begin, end.plusDays(1), Orders.COMPLETED);
+        Map<String, Integer> totalOrderMap = new HashMap<>();
+        Map<String, Integer> validOrderMap = new HashMap<>();
+        for (Map<String, Object> item : orderDailyList) {
+            String date = item.get("date").toString();
+            totalOrderMap.put(date, ((Number) item.get("totalOrderCount")).intValue());
+            validOrderMap.put(date, ((Number) item.get("validOrderCount")).intValue());
+        }
+
+        // 查询每天的营业额
+        List<Map<String, Object>> turnoverList = orderMapper.sumTurnoverByDateRange(
+                begin, end.plusDays(1), Orders.COMPLETED);
+        Map<String, Double> turnoverMap = new HashMap<>();
+        for (Map<String, Object> item : turnoverList) {
+            turnoverMap.put(item.get("date").toString(), ((Number) item.get("turnover")).doubleValue());
+        }
+
+        // 查询每天的新增用户数
+        List<Map<String, Object>> userList = userMapper.countByDateRange(begin, end.plusDays(1));
+        Map<String, Integer> newUserMap = new HashMap<>();
+        for (Map<String, Object> item : userList) {
+            newUserMap.put(item.get("date").toString(), ((Number) item.get("newUserCount")).intValue());
+        }
+
+        // 按日期顺序组装结果，并在内存中计算派生字段
+        Map<LocalDate, BusinessDataVO> result = new LinkedHashMap<>();
+        LocalDate temp = begin;
+        while (!temp.isAfter(end)) {
+            String dateStr = temp.toString();
+            int totalOrderCount = totalOrderMap.getOrDefault(dateStr, 0);
+            int validOrderCount = validOrderMap.getOrDefault(dateStr, 0);
+            double turnover = turnoverMap.getOrDefault(dateStr, 0.0);
+            int newUsers = newUserMap.getOrDefault(dateStr, 0);
+
+            double unitPrice = 0.0;
+            double orderCompletionRate = 0.0;
+            if (totalOrderCount != 0 && validOrderCount != 0) {
+                orderCompletionRate = (double) validOrderCount / totalOrderCount;
+                unitPrice = turnover / validOrderCount;
+            }
+
+            result.put(temp, BusinessDataVO.builder()
+                    .turnover(turnover)
+                    .validOrderCount(validOrderCount)
+                    .orderCompletionRate(orderCompletionRate)
+                    .unitPrice(unitPrice)
+                    .newUsers(newUsers)
+                    .build());
+
+            temp = temp.plusDays(1);
+        }
+        return result;
     }
 
 
