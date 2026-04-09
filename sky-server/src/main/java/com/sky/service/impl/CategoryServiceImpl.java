@@ -17,6 +17,7 @@ import com.sky.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -114,6 +115,7 @@ public class CategoryServiceImpl implements CategoryService {
      * @param type
      * @return
      */
+    @Cacheable(value = "categoryCache", key = "#type != null ? #type : 'all'")
     public List<Category> list(Integer type) {
         return categoryMapper.list(type);
     }

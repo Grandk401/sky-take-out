@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -231,8 +232,14 @@ public class DishServiceImpl implements DishService {
         dish.setStatus(StatusConstant.ENABLE); // 只查询起售中的菜品
         list = listWithFlavor(dish);
 
-        // 存入Redis缓存
-        redisTemplate.opsForValue().set(key, list);
+        // 存入Redis缓存（基础5小时 + 随机0~2小时，预防可能的缓存雪崩问题）
+        if (list != null && list.size() > 0) {
+            long ttl = 5 * 60 * 60 + (long) (Math.random() * 2 * 60 * 60);
+            redisTemplate.opsForValue().set(key, list, ttl, TimeUnit.SECONDS);
+        } else {
+            // 查询结果为空时缓存空值，防止缓存穿透（短过期时间）
+            redisTemplate.opsForValue().set(key, new ArrayList<>(), 5, TimeUnit.MINUTES);
+        }
 
         return list;
     }
