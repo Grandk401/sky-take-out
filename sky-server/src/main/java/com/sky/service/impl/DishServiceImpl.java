@@ -3,6 +3,7 @@ package com.sky.service.impl;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
+import com.sky.constant.RedisCacheConstant;
 import com.sky.constant.StatusConstant;
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
@@ -13,6 +14,7 @@ import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealDishMapper;
 import com.sky.result.PageResult;
+import com.sky.service.CategoryService;
 import com.sky.service.DishService;
 import com.sky.vo.DishVO;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,8 @@ public class DishServiceImpl implements DishService {
     private SetmealDishMapper setmealDishMapper;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private CategoryService categoryService;
 
     /**
      * 新增菜品
@@ -62,7 +66,7 @@ public class DishServiceImpl implements DishService {
             dishFlavorMapper.insertBatch(flavors);
         }
         // 清空Redis中菜品列表缓存
-        redisTemplate.delete("dish_" + dishDTO.getCategoryId());
+        redisTemplate.delete(RedisCacheConstant.buildDishKey(dishDTO.getCategoryId()));
     }
 
     /**
@@ -102,14 +106,14 @@ public class DishServiceImpl implements DishService {
         }
         //通过ids查询出菜品所属分类
         List<Long> categoryIds = dishMapper.selectCategoryIds(ids);
-        // 清空Redis中菜品列表缓存
-        for (Long categoryId : categoryIds) {
-            redisTemplate.delete("dish_" + categoryId);
-        }
         //删除菜品关联的口味
         dishFlavorMapper.deleteByDishIds(ids);
         //删除菜品
         dishMapper.deleteByIds(ids);
+        // 清空Redis中菜品列表缓存
+        for (Long categoryId : categoryIds) {
+            redisTemplate.delete(RedisCacheConstant.buildDishKey(categoryId));
+        }
     }
 
     /**
@@ -166,11 +170,11 @@ public class DishServiceImpl implements DishService {
         }
         // 清除Redis缓存
         // 原分类必清（菜品信息变了）
-        redisTemplate.delete("dish_" + oldCategoryId);
+        redisTemplate.delete(RedisCacheConstant.buildDishKey(oldCategoryId));
 
         // 如果分类变了，新分类也要清
         if (newCategoryId != null && !newCategoryId.equals(oldCategoryId)) {
-            redisTemplate.delete("dish_" + newCategoryId);
+            redisTemplate.delete(RedisCacheConstant.buildDishKey(newCategoryId));
         }
     }
     /**
@@ -217,11 +221,17 @@ public class DishServiceImpl implements DishService {
      */
     @Override
     public List<DishVO> listWithFlavorByCategory(Long categoryId) {
-        String key = "dish_" + categoryId;
+        // 缓存穿透防护：先校验categoryId是否存在于分类白名单
+        if (!categoryService.existsByCategoryId(categoryId)) {
+            log.warn("缓存穿透拦截：非法 categoryId={}, 直接返回空列表", categoryId);
+            return new ArrayList<>();
+        }
+
+        String key = RedisCacheConstant.buildDishKey(categoryId);
 
         // 先查询Redis中是否存在
         List<DishVO> list = (List<DishVO>) redisTemplate.opsForValue().get(key);
-        if (list != null && list.size() > 0) {
+        if (list != null) {
             // 缓存命中，直接返回
             return list;
         }
@@ -234,11 +244,11 @@ public class DishServiceImpl implements DishService {
 
         // 存入Redis缓存（基础5小时 + 随机0~2小时，预防可能的缓存雪崩问题）
         if (list != null && list.size() > 0) {
-            long ttl = 5 * 60 * 60 + (long) (Math.random() * 2 * 60 * 60);
+            long ttl = RedisCacheConstant.DISH_TTL_BASE_SECONDS + (long) (Math.random() * RedisCacheConstant.DISH_TTL_JITTER_SECONDS);
             redisTemplate.opsForValue().set(key, list, ttl, TimeUnit.SECONDS);
         } else {
             // 查询结果为空时缓存空值，防止缓存穿透（短过期时间）
-            redisTemplate.opsForValue().set(key, new ArrayList<>(), 5, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(key, new ArrayList<>(), RedisCacheConstant.DISH_NULL_TTL_SECONDS, TimeUnit.SECONDS);
         }
 
         return list;
@@ -263,7 +273,7 @@ public class DishServiceImpl implements DishService {
         dishMapper.update(updateDish);
 
         // 清除Redis缓存（该分类下菜品状态变了，必须清缓存）
-        String key = "dish_" + categoryId;
+        String key = RedisCacheConstant.buildDishKey(categoryId);
         redisTemplate.delete(key);
 
         log.info("菜品状态修改成功：id={}, status={}, 清除分类{}缓存", id, status, categoryId);

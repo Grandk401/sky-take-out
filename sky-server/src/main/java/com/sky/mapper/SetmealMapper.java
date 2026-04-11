@@ -9,6 +9,7 @@ import com.sky.vo.DishItemVO;
 import com.sky.vo.SetmealVO;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -82,4 +83,11 @@ public interface SetmealMapper {
      * @return 包含 sold/discontinued 的Map
      */
     Map<String, Object> countOverViewByMap();
+
+    /**
+     * 根据套餐ID列表查询所属分类ID列表
+     * @param ids 套餐ID列表
+     * @return 分类ID列表
+     */
+    List<Long> selectCategoryIds(@Param("ids") List<Long> ids);
 }

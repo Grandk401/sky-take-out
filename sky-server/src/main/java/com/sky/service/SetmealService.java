@@ -58,9 +58,16 @@ public interface SetmealService {
     List<Setmeal> list(Setmeal setmeal);
 
     /**
-     * 根据id查询菜品选项
+     * 根据分类id查询菜品选项
      * @param id
      * @return
      */
     List<DishItemVO> getDishItemById(Long id);
+
+    /**
+     * 根据分类id查询套餐（带Redis缓存，用户端调用）
+     * @param categoryId 分类id
+     * @return 套餐列表
+     */
+    List<Setmeal> listByCategoryWithCache(Long categoryId);
 }
