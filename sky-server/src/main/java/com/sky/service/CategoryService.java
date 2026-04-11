@@ -46,4 +46,16 @@ public interface CategoryService {
      * @return
      */
     List<Category> list(Integer type);
+
+    /**
+     * 判断categoryId是否存在于Redis白名单中（用于缓存穿透防护）
+     * @param categoryId 分类id
+     * @return 存在返回true，否则false
+     */
+    boolean existsByCategoryId(Long categoryId);
+
+    /**
+     * 管理端写操作后主动重建分类缓存白名单
+     */
+    void rebuildCategoryCache();
 }
