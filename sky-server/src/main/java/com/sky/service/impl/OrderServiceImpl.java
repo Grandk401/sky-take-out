@@ -9,6 +9,8 @@ import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
 import com.sky.dto.*;
 import com.sky.entity.*;
+import com.sky.enumeration.OrderStatusEnum;
+import com.sky.enumeration.OrderTransitionEvent;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
 import com.sky.exception.ShoppingCartBusinessException;
@@ -207,10 +209,9 @@ public class OrderServiceImpl implements OrderService {
         if(!ordersDB.getUserId().equals(BaseContext.getCurrentId())){
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_YOUR);
         }
-        //判断订单状态，只允许取消待付款和待接单状态的订单 1待付款 2待接单 3已接单 4派送中 5已完成 6已取消
-        if(ordersDB.getStatus() > Orders.TO_BE_CONFIRMED){
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
-        }
+        //校验状态转换合法性（基于事件驱动枚举状态机）
+        // 传入 USER_CANCEL 事件：只有待付款/待接单状态允许用户取消
+        validateTransition(ordersDB.getStatus(), Orders.CANCELLED, OrderTransitionEvent.USER_CANCEL);
         Orders orders = new Orders();
         orders.setId(ordersDB.getId());
         //若订单支付状态为已支付，调用微信退款接口
@@ -334,10 +335,9 @@ public class OrderServiceImpl implements OrderService {
         if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
-        //校验订单状态是否为待接单
-        if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
-            throw new OrderBusinessException("订单状态不是待接单");
-        }
+        //校验状态转换合法性（基于事件驱动枚举状态机）
+        // 传入 MERCHANT_ACCEPT 事件：只有待接单状态允许商家接单
+        validateTransition(ordersDB.getStatus(), Orders.CONFIRMED, OrderTransitionEvent.MERCHANT_ACCEPT);
         //更新订单状态，只更新状态字段
         Orders orders = Orders.builder()
                 .id(ordersDB.getId())
@@ -359,10 +359,9 @@ public class OrderServiceImpl implements OrderService {
         if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
-        //校验订单状态是否为待接单
-        if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
-            throw new OrderBusinessException("订单状态不是待接单");
-        }
+        //校验状态转换合法性（基于事件驱动枚举状态机）
+        // 传入 MERCHANT_REJECT 事件：只有待接单状态允许商家拒单（待付款不能被拒单！）
+        validateTransition(ordersDB.getStatus(), Orders.CANCELLED, OrderTransitionEvent.MERCHANT_REJECT);
         //如果已支付，调用微信退款接口，并更新支付状态为已退款，订单状态为已取消
         if (Orders.PAID.equals(ordersDB.getPayStatus())) {
 //            //调用微信退款接口
@@ -398,6 +397,9 @@ public class OrderServiceImpl implements OrderService {
            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
        }
 
+        //校验状态转换合法性（基于事件驱动枚举状态机）
+        // 传入 MERCHANT_CANCEL 事件：商家可以取消待付款/待接单/已接单的订单
+        validateTransition(ordersDB.getStatus(), Orders.CANCELLED, OrderTransitionEvent.MERCHANT_CANCEL);
         //构造订单实体类
         Orders orders = Orders.builder()
                 .id(ordersDB.getId())
@@ -433,10 +435,9 @@ public class OrderServiceImpl implements OrderService {
         if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
-        //校验订单状态是否为已接单
-        if (!Orders.CONFIRMED.equals(ordersDB.getStatus())) {
-            throw new OrderBusinessException("订单状态不是已接单");
-        }
+        //校验状态转换合法性（基于事件驱动枚举状态机）
+        // 传入 DELIVERY_START 事件：只有已接单状态允许开始派送
+        validateTransition(ordersDB.getStatus(), Orders.DELIVERY_IN_PROGRESS, OrderTransitionEvent.DELIVERY_START);
         //更新订单状态，只更新状态字段
         Orders orders = Orders.builder()
                 .id(ordersDB.getId())
@@ -457,10 +458,9 @@ public class OrderServiceImpl implements OrderService {
         if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
-        //校验订单状态是否为派送中
-        if (!Orders.DELIVERY_IN_PROGRESS.equals(ordersDB.getStatus())) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
-        }
+        //校验状态转换合法性（基于事件驱动枚举状态机）
+        // 传入 COMPLETE 事件：只有派送中状态允许完成
+        validateTransition(ordersDB.getStatus(), Orders.COMPLETED, OrderTransitionEvent.COMPLETE);
         //更新订单状态，只更新状态字段
         Orders orders = Orders.builder()
                 .id(ordersDB.getId())
@@ -622,6 +622,32 @@ public class OrderServiceImpl implements OrderService {
         if(distance > 5000){
             //配送距离超过5000米
             throw new OrderBusinessException("超出配送范围");
+        }
+    }
+
+    /**
+     * 校验订单状态转换的合法性（基于事件驱动枚举状态机）
+     * <p>
+     * 通过 {@link OrderStatusEnum} 中预定义的【事件→目标状态】转换规则，
+     * 校验当前状态在指定事件的触发下能否转换到目标状态。
+     * 如果转换不合法，抛出 {@link OrderBusinessException}
+     * </p>
+     *
+     * @param currentStatusCode 当前状态编码
+     * @param targetStatusCode  目标状态编码
+     * @param event             触发转换的事件（区分不同来源的语义差异，如"用户取消"vs"商家拒单"）
+     */
+    private void validateTransition(Integer currentStatusCode, Integer targetStatusCode, OrderTransitionEvent event) {
+        OrderStatusEnum currentStatus = OrderStatusEnum.getByCode(currentStatusCode);
+        OrderStatusEnum targetStatus = OrderStatusEnum.getByCode(targetStatusCode);
+        if (currentStatus == null || targetStatus == null) {
+            log.error("非法的订单状态：当前状态={}, 目标状态={}", currentStatusCode, targetStatusCode);
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        if (!currentStatus.canTransitionTo(event, targetStatus)) {
+            log.error("订单状态转换被拒绝：无法通过[{}]事件从[{}]转换为[{}]",
+                    event.getDesc(), currentStatus.getDesc(), targetStatus.getDesc());
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
     }
 }
